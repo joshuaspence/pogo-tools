@@ -1,0 +1,55 @@
+#!/bin/bash
+
+source "$(dirname "$0")/../lib/utility.sh"
+readonly POGOMAP_ROOT="${ROOT_DIR}/PokemonGo-Map"
+
+function install_pogomap() {
+  local NEEDS_BUILD=false
+  local -r REPOSITORY="PokemonGoMap/PokemonGo-Map"
+
+  if ! test -d "${POGOMAP_ROOT}"; then
+    echo "Cloning ${REPOSITORY}..."
+    git clone "https://github.com/${REPOSITORY}.git" "${POGOMAP_ROOT}"
+    NEEDS_BUILD=true
+  else
+    echo "Checking ${REPOSITORY} for updates..."
+    git -C "${POGOMAP_ROOT}" fetch
+
+    LOCAL_HEAD=$(git -C "${POGOMAP_ROOT}" rev-parse @)
+    REMOTE_HEAD=$(git -C "${POGOMAP_ROOT}" rev-parse @{u})
+
+    if [[ "${LOCAL_HEAD}" != "${REMOTE_HEAD}" ]]; then
+      echo "Updating ${REPOSITORY}..."
+      git -C "${POGOMAP_ROOT}" pull --ff-only --no-stat
+      NEEDS_BUILD=true
+    fi
+  fi
+
+  if [[ "${NEEDS_BUILD}" = true ]]; then
+    echo "Installing dependencies..."
+    pip install --requirement "${POGOMAP_ROOT}/requirements.txt" --upgrade
+
+    echo "Building static assets..."
+    npm --prefix "${POGOMAP_ROOT}" install
+  fi
+}
+
+function run_server() {
+  # We need to symlink the configuration into
+  # `${POGOMAP_ROOT}/config/config.ini` because it cannot be specified using a
+  # command line flag. See
+  # https://github.com/PokemonGoMap/PokemonGo-Map/pull/987.
+  if ! test -r "${POGOMAP_ROOT}/config/config.ini"; then
+    echo "Installing configuration..."
+    ln --symbolic "${CONFIG_DIR}/pogomap.ini" "${POGOMAP_ROOT}/config/config.ini"
+  fi
+
+  echo "Running server..."
+  python "${POGOMAP_ROOT}/runserver.py" \
+    --accountcsv "${CONFIG_DIR}/accounts.csv" \
+    --db "${ROOT_DIR}/pogom.db" \
+    --status-name main
+}
+
+install_pogomap
+run_server

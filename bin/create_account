@@ -1,0 +1,31 @@
+#!/bin/bash
+
+source "$(dirname "$0")/../lib/utility.sh"
+
+function install_pogotos() {
+  # TODO: Point back to `git+https://github.com/TachyonRSA/PoGoTos.git` after
+  # https://github.com/TachyonRSA/PoGoTos/pull/16 has been merged.
+  pip install --upgrade git+https://github.com/joshuaspence/PoGoTos.git
+}
+
+function install_ptc_account() {
+  pip install --upgrade git+https://github.com/Kitryn/PTCAccount2.git
+
+  if ! command -v chromedriver >/dev/null; then
+    echo "ChromeDriver is not installed! Please install ChromeDriver." >&2
+    return 1
+  fi
+}
+
+echo "Installing PTCAccount2..."
+install_ptc_account
+
+echo "Installing PoGoTos..."
+install_pogotos
+
+COUNT="${1:-1}"
+OUTPUT=$(mktemp --tmpdir accounts.XXXXXXXXXX.txt)
+ptc2 --multiple "${COUNT}" --output "${OUTPUT}"
+pogotos "${OUTPUT}"
+cat "${OUTPUT}" | awk --field-separator=: '{print $1 "," $2}' >> "${CONFIG_DIR}/accounts.csv"
+rm "${OUTPUT}"

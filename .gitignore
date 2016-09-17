@@ -1,0 +1,14 @@
+# Configuration
+/config/accounts.csv
+/config/alarms.json
+/config/pogomap.ini
+/config/pokealarm.ini
+
+# Data
+/pogom.db
+/pogom.db-*
+
+# Source
+/PokeAlarm/
+/PokemonGo-Map/
+/venv/

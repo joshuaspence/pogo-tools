@@ -1,0 +1,48 @@
+#!/bin/bash
+
+source "$(dirname "$0")/../lib/utility.sh"
+readonly POKEALARM_ROOT="${ROOT_DIR}/PokeAlarm"
+
+function install_pokealarm() {
+  local NEEDS_BUILD=false
+  local -r REPOSITORY="kvangent/PokeAlarm"
+
+  if ! test -d "${POKEALARM_ROOT}"; then
+    echo "Cloning ${REPOSITORY}..."
+    git clone "https://github.com/${REPOSITORY}.git" "${POKEALARM_ROOT}"
+    NEEDS_BUILD=true
+  else
+    echo "Checking ${REPOSITORY} for updates..."
+    git -C "${POKEALARM_ROOT}" fetch
+
+    LOCAL_HEAD=$(git -C "${POKEALARM_ROOT}" rev-parse @)
+    REMOTE_HEAD=$(git -C "${POKEALARM_ROOT}" rev-parse @{u})
+
+    if [[ "${LOCAL_HEAD}" != "${REMOTE_HEAD}" ]]; then
+      echo "Updating ${REPOSITORY}..."
+      git -C "${POKEALARM_ROOT}" pull --ff-only --no-stat
+      NEEDS_BUILD=true
+    fi
+  fi
+
+  if [[ "${NEEDS_BUILD}" = true ]]; then
+    echo "Installing dependencies..."
+    pip install --requirement "${POKEALARM_ROOT}/requirements.txt" --upgrade
+  fi
+}
+
+function run_server() {
+  # We need to symlink the configuration into
+  # `${POKEALARM_ROOT}/config/config.ini` because it cannot be specified using
+  # a command line flag.
+  if ! test -r "${POKEALARM_ROOT}/config/config.ini"; then
+    echo "Installing configuration..."
+    ln --symbolic "${CONFIG_DIR}/pokealarm.ini" "${POKEALARM_ROOT}/config/config.ini"
+  fi
+
+  echo "Running server..."
+  python "${POKEALARM_ROOT}/runwebhook.py" --config "${CONFIG_DIR}/alarms.json"
+}
+
+install_pokealarm
+run_server
