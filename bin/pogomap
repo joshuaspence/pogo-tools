@@ -35,17 +35,9 @@ function install_pogomap() {
 }
 
 function run_server() {
-  # We need to symlink the configuration into
-  # `${POGOMAP_ROOT}/config/config.ini` because it cannot be specified using a
-  # command line flag. See
-  # https://github.com/PokemonGoMap/PokemonGo-Map/pull/987.
-  if ! test -r "${POGOMAP_ROOT}/config/config.ini"; then
-    echo "Installing configuration..."
-    ln --symbolic "${CONFIG_DIR}/pogomap.ini" "${POGOMAP_ROOT}/config/config.ini"
-  fi
-
   echo "Running server..."
   python "${POGOMAP_ROOT}/runserver.py" \
+    --config "${CONFIG_DIR}/pogomap.ini" \
     --accountcsv "${CONFIG_DIR}/accounts.csv" \
     --db "${ROOT_DIR}/pogom.db" \
     --status-name main
