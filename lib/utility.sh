@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Set various shell options to make script execution more strict.
+# See http://kvz.io/blog/2013/11/21/bash-best-practices/.
 set -o errexit
 set -o nounset
 set -o pipefail
